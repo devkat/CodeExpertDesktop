@@ -3,6 +3,8 @@ import {
   eq,
   monoid,
   nonEmptyArray,
+  not,
+  number,
   option,
   pipe,
   string,
@@ -37,8 +39,8 @@ export const getRemoteChanges = (
     array.filter((ls) =>
       pipe(
         latestFiles,
-        array.findFirst((cs) => cs.path === ls.path),
-        option.exists((cs) => cs.version !== ls.version),
+        array.findFirst(eq.isEqualTo(eqPath)(ls)),
+        option.exists(not(eq.isEqualTo(eqVersion)(ls))),
       ),
     ),
     array.map(({ path, version }) => ({ path, change: remoteFileChange.updated(version) })),
@@ -150,4 +152,8 @@ export const getConflicts = (
 
 const eqPath = eq.struct({
   path: string.Eq,
+});
+
+const eqVersion = eq.struct({
+  version: number.Eq,
 });

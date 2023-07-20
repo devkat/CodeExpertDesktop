@@ -50,7 +50,7 @@ const projectsFromMetadata = (projects: Array<ProjectMetadata>): task.Task<Array
   pipe(projects, task.traverseArray(projectFromMetadata), task.map(array.unsafeFromReadonly));
 
 export const mkProjectRepositoryTauri = (): task.Task<ProjectRepository> => {
-  const persistMetadata = (metadata: Array<ProjectMetadata>): taskOption.TaskOption<void> =>
+  const persistMetadata = (metadata: Array<ProjectMetadata>): task.Task<void> =>
     projectMetadataStore.writeAll(metadata);
 
   const setProjects =

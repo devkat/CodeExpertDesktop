@@ -2,7 +2,6 @@ import { invoke } from '@tauri-apps/api';
 import { getVersion } from '@tauri-apps/api/app';
 import { removeDir } from '@tauri-apps/api/fs';
 import { relaunch } from '@tauri-apps/api/process';
-import { Store as TauriStore } from 'tauri-plugin-store-api';
 import {
   constVoid,
   either,
@@ -15,10 +14,11 @@ import {
 } from '@code-expert/prelude';
 import { os, path } from '@/lib/tauri';
 import { TauriException, fromTauriError } from '@/lib/tauri/TauriException';
+import { tauriStore } from '@/lib/tauri/TauriStore';
 import { removeFile } from '@/lib/tauri/fs';
 import { panic } from '@/utils/error';
 
-const store = new TauriStore('settings.json');
+const store = tauriStore('settings.json');
 
 export interface Api {
   getVersion: task.Task<string>;
@@ -53,12 +53,8 @@ export const api: Api = {
       task.map((ae) => (ae._tag === 'Left' ? either.left(ae.value) : either.right(ae.value))),
     ),
   buildTar: (fileName, rootDir, files) => () => invoke('build_tar', { fileName, rootDir, files }),
-  settingRead: (key, decoder) =>
-    pipe(() => store.get(key), task.map(decoder.decode), taskOption.fromTaskEither),
-  settingWrite: (key, value) => () =>
-    value != null
-      ? store.set(key, value).then(() => store.save())
-      : store.delete(key).then(() => store.save()),
+  settingRead: (key, decoder) => pipe(store.get(key), taskOption.chainEitherK(decoder.decode)),
+  settingWrite: (key, value) => (value != null ? store.set(key, value) : store.delete(key)),
   removeDir: (filePath) =>
     taskEither.tryCatch(() => removeDir(filePath, { recursive: true }), fromTauriError),
   getFileHash: (path) =>
